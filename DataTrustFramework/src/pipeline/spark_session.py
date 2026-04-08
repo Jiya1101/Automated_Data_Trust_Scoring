@@ -30,26 +30,19 @@ def create_spark_session(app_name="DataTrustScoring"):
     # Create Spark Session
     # ----------------------------------------------------
     spark = (
-    SparkSession.builder
-    .appName(app_name)
-    .master("local[1]")
-
-    .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-    .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
-    .config("spark.jars.packages", "io.delta:delta-spark_2.12:3.1.0")
-
-    .config("spark.driver.memory", "2g")
-
-    .config("spark.hadoop.io.native.lib.available", "false")
-
-    # IMPORTANT WINDOWS FIX
-    .config("spark.sql.sources.commitProtocolClass",
-            "org.apache.spark.sql.execution.datasources.SQLHadoopMapReduceCommitProtocol")
-
-    .config("spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version", "2")
-
-    .getOrCreate()
-)
+        SparkSession.builder
+        .appName(app_name)
+        .master("local[1]")
+        .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+        .config("spark.jars.packages", "io.delta:delta-spark_2.12:3.1.0")
+        .config("spark.driver.memory", "2g")
+        .config("spark.hadoop.io.native.lib.available", "false")
+        .config("spark.sql.sources.commitProtocolClass",
+                "org.apache.spark.sql.execution.datasources.SQLHadoopMapReduceCommitProtocol")
+        .config("spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version", "2")
+        .getOrCreate()
+    )
 
     # Reduce log verbosity
     spark.sparkContext.setLogLevel("ERROR")
