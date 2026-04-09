@@ -19,6 +19,7 @@ def create_spark_session(app_name="DataTrustScoring"):
 
         os.environ["HADOOP_HOME"] = hadoop_home
         os.environ["hadoop.home.dir"] = hadoop_home
+        os.environ["PATH"] = os.path.join(hadoop_home, "bin") + os.pathsep + os.environ.get("PATH", "")
 
     # ----------------------------------------------------
     # Ensure PySpark uses the venv Python (3.11)

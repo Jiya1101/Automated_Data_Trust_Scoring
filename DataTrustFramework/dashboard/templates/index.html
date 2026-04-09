@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrustLens | Analytical Dashboard</title>
+    <!-- Strong Serif Typeface -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    
+    <!-- Background Elements -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <main class="dashboard-container">
+        
+        <!-- Header -->
+        <header class="glass-panel main-header">
+            <div class="logo">
+                <h1>TrustLens <span class="tag">AI Scoring</span></h1>
+            </div>
+            <p>Upload your dataset and instantly analyze trustworthiness, data quality, and anomaly metrics.</p>
+        </header>
+
+        <div class="dashboard-grid">
+            
+            <!-- Upload Section -->
+            <section class="glass-panel upload-section">
+                <h2>Data Ingestion</h2>
+                <div class="upload-dropzone" id="dropzone">
+                    <input type="file" id="fileInput" accept=".csv" hidden>
+                    <div class="upload-content">
+                        <h3>Drag & Drop</h3>
+                        <p>your CSV dataset here or <span class="browse-link">browse</span></p>
+                    </div>
+                </div>
+                <div class="file-info hidden" id="fileInfo">
+                    <span id="fileName">dataset.csv</span>
+                    <button class="btn clear-btn" id="clearBtn">✕</button>
+                    <button class="btn analyze-btn" id="analyzeBtn">Analyze Data</button>
+                </div>
+                <!-- Loading State -->
+                <div class="loading-state hidden" id="loadingState">
+                    <div class="spinner"></div>
+                    <p>Processing via Data Trust Engine...</p>
+                </div>
+            </section>
+
+            <!-- Score display -->
+            <section class="glass-panel score-section">
+                <h2>Total Trust Score</h2>
+                <div class="score-display">
+                    <svg viewBox="0 0 36 36" class="circular-chart">
+                        <path class="circle-bg"
+                            d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <path class="circle"
+                            id="scoreCircle"
+                            stroke-dasharray="0, 100"
+                            d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <text x="18" y="20.35" class="percentage" id="scoreText">--</text>
+                    </svg>
+                </div>
+                <p class="score-status" id="scoreStatus">Ready to Analyze</p>
+            </section>
+
+            <!-- Metrics Overview -->
+            <section class="glass-panel metrics-section">
+                <h2>Quality Matrix</h2>
+                <div class="chart-container">
+                    <canvas id="qualityChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Summary Cards -->
+            <section class="glass-panel cards-section">
+                <div class="metric-card">
+                    <h4>Total Records</h4>
+                    <span class="metric-value" id="totalRecords">--</span>
+                </div>
+                <div class="metric-card">
+                    <h4>Completeness</h4>
+                    <span class="metric-value" id="metaCompleteness">--</span>
+                </div>
+                <div class="metric-card alert">
+                    <h4>Anomaly Rate</h4>
+                    <span class="metric-value" id="metaAnomaly">--</span>
+                </div>
+            </section>
+            
+            <!-- Top 10 Anomalies Table -->
+            <section class="glass-panel table-section hidden" id="anomaliesSection" style="grid-column: 1 / -1; margin-top: 20px;">
+                <h2>Top 10 High-Risk Anomalies</h2>
+                <div style="overflow-x: auto;">
+                    <table class="anomaly-table">
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Source</th>
+                                <th>Amount</th>
+                                <th>Severity Score</th>
+                                <th>Trust Impact</th>
+                            </tr>
+                        </thead>
+                        <tbody id="anomalyTableBody">
+                            <!-- Rows will be injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

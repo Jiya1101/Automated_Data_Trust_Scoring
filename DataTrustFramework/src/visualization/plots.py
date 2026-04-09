@@ -1,71 +1,102 @@
 import os
-import matplotlib.pyplot as plt
 import pandas as pd
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 def generate_visualizations(pdf: pd.DataFrame, output_dir: str = 'plots'):
     """
-    Generates and saves the required plots based on the pandas DataFrame.
+    Generates and saves a combined comprehensive interactive dashboard visualization 
+    for Trust Scores, Anomalies, and Reputation strictly using Plotly.
     """
     os.makedirs(output_dir, exist_ok=True)
-    print("Generating visualizations...")
+    print("Generating comprehensive interactive visualization...")
     
-    # 1. Trust Score Distribution
-    plt.figure(figsize=(10, 6))
-    plt.hist(pdf['trust_score'], bins=50, color='skyblue', edgecolor='black')
-    plt.title('Distribution of Data Trust Scores')
-    plt.xlabel('Trust Score (0-100)')
-    plt.ylabel('Frequency')
-    plt.grid(axis='y', alpha=0.75)
-    plt.savefig(os.path.join(output_dir, 'trust_score_distribution.png'))
-    plt.close()
-    
-    # Group by source for next two plots
+    # 1. Prepare Aggregated Metric matrix for Radar & Bar charts
+    # We use completeness, accuracy, freshness (assume 1.0 if missing), reputation
+    if 'freshness' not in pdf.columns:
+        pdf['freshness'] = 1.0
+        
     source_stats = pdf.groupby('source_id').agg(
+        avg_completeness=('completeness', 'mean'),
+        avg_accuracy=('accuracy', 'mean'),
+        avg_freshness=('freshness', 'mean'),
+        avg_reputation=('source_reputation', 'mean'),
         anomaly_count=('is_anomaly', 'sum'),
-        avg_reputation=('source_reputation', 'mean')
+        avg_trust=('trust_score', 'mean')
     ).reset_index()
+
+    # 2. Build Multi-Subplot layout
+    fig = make_subplots(
+        rows=1, cols=2, 
+        specs=[[{"type": "polar"}, {"type": "xy"}]],
+        subplot_titles=("Quality Matrix (Radar)", "Comprehensive Source Comparison")
+    )
     
-    # 2. Anomaly Count by Source
-    plt.figure(figsize=(8, 5))
-    plt.bar(source_stats['source_id'], source_stats['anomaly_count'], color='salmon')
-    plt.title('Total Anomalies Detected by Source')
-    plt.xlabel('Source ID')
-    plt.ylabel('Anomaly Count')
-    plt.savefig(os.path.join(output_dir, 'anomaly_count_by_source.png'))
-    plt.close()
+    # Trace 1: Radar Charts dynamically added for each source
+    metrics_cats = ['completeness', 'accuracy', 'freshness', 'source_reputation']
     
-    # 3. Source Reputation Comparison
-    plt.figure(figsize=(8, 5))
-    plt.bar(source_stats['source_id'], source_stats['avg_reputation'], color='lightgreen')
-    plt.title('Source Reputation Comparison')
-    plt.xlabel('Source ID')
-    plt.ylabel('Reputation Score (0-1)')
-    plt.ylim(0, 1.1)
-    for i, v in enumerate(source_stats['avg_reputation']):
-        plt.text(i, v + 0.02, str(round(v, 3)), ha='center')
-    plt.savefig(os.path.join(output_dir, 'source_reputation_comparison.png'))
-    plt.close()
+    for i, row in source_stats.iterrows():
+        # Scale to 100 for visual uniformity on radar
+        r_vals = [
+            row['avg_completeness'] * 100, 
+            row['avg_accuracy'] * 100, 
+            row['avg_freshness'] * 100, 
+            row['avg_reputation'] * 100
+        ]
+        # Close the loop
+        r_vals.append(r_vals[0])
+        theta_cats = ['Completeness', 'Accuracy', 'Freshness', 'Reputation', 'Completeness']
+        
+        fig.add_trace(go.Scatterpolar(
+            r=r_vals,
+            theta=theta_cats,
+            fill='toself',
+            name=row['source_id'],
+            opacity=0.6
+        ), row=1, col=1)
+
+    # Trace 2: Clustered Bar Source Comparison (all remaining core variables natively)
+    fig.add_trace(go.Bar(
+        x=source_stats['source_id'],
+        y=source_stats['avg_trust'],
+        name='Avg Trust Score (%)',
+        marker_color='#10b981'
+    ), row=1, col=2)
     
-    print(f"Visualizations saved to {output_dir}/ directory.")
+    fig.add_trace(go.Bar(
+        x=source_stats['source_id'],
+        y=source_stats['anomaly_count'],
+        name='Total Anomalies Found',
+        marker_color='#ef4444'
+    ), row=1, col=2)
+    
+    # Formatting
+    fig.update_layout(
+        title_text="Data Trust Framework: Interactive Analysis Engine",
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 100])
+        ),
+        font=dict(family="Playfair Display, serif"),
+        barmode='group',
+        template="plotly_dark"
+    )
+    
+    # Save purely as HTML for full Plotly interactivity capabilities
+    output_path = os.path.join(output_dir, 'comprehensive_analysis.html')
+    fig.write_html(output_path)
+    
+    print(f"Visualization saved to {output_path}")
 
 if __name__ == '__main__':
     import os
     import sys
     
-    # We will read the processed data directly using Pandas because PySpark
-    # initialization is currently broken on this machine due to Python 3.13 
-    # native-hadoop Py4J incompatibilities that persist even in the 3.11 venv.
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
-    
-    parquet_data_path =  r"C:\jiya\big-data-scoring\data\output\trust_scores"
-    plots_output_dir = os.path.join(project_root, 'plots')
+    parquet_data_path = "data/output/trust_scores"
+    plots_output_dir = "DataTrustFramework/plots"
     
     print(f"Loading data from {parquet_data_path} using Pandas...")
     try:
-        # Load the Parquet directory output by the pipeline
         df = pd.read_parquet(parquet_data_path)
-        
-        # Sample for plotting to avoid Memory issues if dataset is huge
         sample_size = min(100_000, len(df))
         if len(df) > sample_size:
             pdf = df.sample(n=sample_size, random_state=42)

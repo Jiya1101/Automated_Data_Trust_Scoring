@@ -25,15 +25,21 @@ def main():
     spark = create_spark_session()
     
     # Define file paths
-    raw_data_path = 'data/raw/transactions.csv'
+    unified_data_path = 'DataTrustFramework/data/unified/combined_real_data'
     delta_output_path = 'data/output/trust_scores'
     
-    # 2. Load Dataset
-    print("\nPhase 1: Ingestion")
-    df = load_csv_data(spark, raw_data_path)
+    # 2. Load Dataset using Pandas to bypass missing Hadoop DLLs natively on Windows
+    print("\nPhase 1: Ingestion (Pandas -> Spark)")
+    import pandas as pd
+    pdf_in = pd.read_parquet(unified_data_path)
+    # SAMPLE down to 20,000 records to bypass local machine JVM memory limits smoothly
+    pdf_in = pdf_in.sample(n=min(20000, len(pdf_in)), random_state=42)
+    df = spark.createDataFrame(pdf_in)
     
     # 3. Compute Quality Metrics
     print("\nPhase 2: Quality Metrics Computation")
+    from pyspark.sql.functions import current_timestamp
+    df = df.withColumn("ingestion_timestamp", current_timestamp())
     df = compute_quality_metrics(df)
     
     # 4. Anomaly Detection
